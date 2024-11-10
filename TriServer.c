@@ -187,6 +187,7 @@ int main(int argc, char *argv[])
         giocatore si connette alla partia
     */
 
+    // Il gioco va avanti fin quando un giocatore vince o pareggia
     while (1)
     {
         /* code */

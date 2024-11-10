@@ -34,11 +34,23 @@ int main(int argc, char *argv[])
 {
     startup_controls(argc, argv);
 
+    // Memoria condivisa
     shmid = shmget(SHM_KEY, SIZE, 0600);
     shared_memory = (int *)shmat(shmid, NULL, SHM_RND);
 
-    semid = semget();
+    // Semafori
+    semid = semget(SEM_KEY, 1, 0600);
     semval = semctl(semid, 0, GETVAL);
+
+    /*
+        Gioco in coppia
+        // ogni client che viene eseguito fa un'operazione di incremento sul semaforo semid,
+        // quando vengono eseguiti 2 client allora il semaforo va a 0 e il server continua
+    */
+
+    /*
+        Gioco singolo
+    */
 
     return 0;
 }
