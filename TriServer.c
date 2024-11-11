@@ -12,7 +12,6 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define BOARD_SIZE_DEF 3
 #define SHM_KEY 4321
 #define SEM_KEY 8765
 #define SIZE 1024
@@ -23,6 +22,9 @@ void handle_ctrl(int sig);
 void cleanup();
 bool victory();
 bool draw();
+
+int rows = 0;
+int cols = 0;
 
 int timeout = 0;
 char player1;
@@ -77,7 +79,7 @@ void startup_controls(int argc, char *argv[])
 }
 
 // Gestione del CTRL + C
-void handle_ctrl(int sig)
+void sig_handle_ctrl(int sig)
 {
     if (ctrl_count == 0)
     {
@@ -146,11 +148,19 @@ bool draw()
 // Main program
 int main(int argc, char *argv[])
 {
-    signal(SIGINT, handle_ctrl);
+    signal(SIGINT, sig_handle_ctrl);
 
     // Controllo iniziale dei parametri
     startup_controls(argc, argv);
 
+    // Richiesta dimensione matrice
+    printf("\nInserisci la dimensione della matrice...\n");
+    printf("RIGHE: ");
+    scanf("%i", &rows);
+
+    printf("COLONNE: ");
+    scanf("%i", &cols);
+ 
     // Creazione memoria condivisa
     shmid = shmget(SHM_KEY, SIZE, IPC_CREAT | 0660);
     if (shmid == -1)
@@ -163,7 +173,7 @@ int main(int argc, char *argv[])
         printf("Memoria creata\n");
     }
 
-    shared_memory = (int *)shmat(shmid, NULL, SHM_RND);
+    shared_memory = (int *)shmat(shmid, NULL, 0);
     if (shared_memory == (int *)-1)
     {
         perror("shmat");
@@ -174,12 +184,16 @@ int main(int argc, char *argv[])
         printf("Spazio di memoria creato\n");
     }
 
-    // Creazione semaf
+    // Creazione semaforo
     semid = semget(SEM_KEY, 1, IPC_CREAT | 0666);
     if (semid < 0)
     {
         perror("semget");
         exit(EXIT_FAILURE);
+    }
+    else
+    {
+        printf("Semaforo creato\n");
     }
 
     /*
@@ -187,7 +201,28 @@ int main(int argc, char *argv[])
         giocatore si connette alla partia
     */
 
+    if (semctl(semid, 0, SETVAL, 0) == -1)
+    {
+        perror("Errore nell'assegnazione -2 al semaforo\n");
+        cleanup();
+        exit(EXIT_FAILURE);
+    }
+
     // Il gioco va avanti fin quando un giocatore vince o pareggia
+    printf("In attesa di due giocatori per iniziare la partita...\n");
+
+    struct sembuf sop;
+    sop.sem_num = 0;
+    sop.sem_op = -2;
+    sop.sem_flg = 0;
+
+    if (semop(semid, &sop, 1) == -1)
+    {
+        perror("Errore in semop durante l'attesa\n");
+    }
+
+    printf("Due giocatori connessi...la parita ha inizio\n");
+
     while (1)
     {
         /* code */
