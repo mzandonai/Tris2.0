@@ -21,6 +21,7 @@ int semval;
 int shmid;
 int *shared_memory;
 
+bool timer_expired = false;
 int ctrl_count = 0; // CTRL + C contatore
 
 bool bot; // giocatore automatico
@@ -40,16 +41,6 @@ void cleanup()
         {
             printf("Mem. condivisa distaccata\n");
         }
-    }
-
-    if (semctl(semid, 0, IPC_RMID) == -1)
-    {
-        perror("Errore durante la rimozione semaforo\n");
-        exit(EXIT_FAILURE);
-    }
-    else
-    {
-        printf("Semaforo rimosso\n");
     }
 }
 
@@ -72,6 +63,8 @@ void sig_handle_ctrl(int sig)
 void sig_handle_timer(int sig)
 {
     // gestore del timer di inserimento mossa
+    printf("\nTempo scaduto\n");
+    timer_expired = true;
 }
 
 void sig_server_closed(int sig)
@@ -79,12 +72,14 @@ void sig_server_closed(int sig)
     if (sig == SIGUSR1)
     {
         printf("\nIl server è stato disconnesso.\n");
+        cleanup();
+        exit(EXIT_FAILURE);
     }
 
     if (sig == SIGUSR2)
     {
         printf("Il tuo avversario ha abbandonato.\n");
-        exit(0);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -109,10 +104,16 @@ void correct_move()
     }
 }
 
+void print_matrix()
+{
+    printf("Tabellone corrente: \n");
+}
+
 int main(int argc, char *argv[])
 {
     startup_controls(argc, argv);    // Controlli di startup
     signal(SIGINT, sig_handle_ctrl); // Gestore del CTRL + C
+    signal(SIGUSR1, sig_server_closed);
 
     // Memoria condivisa
     shmid = shmget(SHM_KEY, SIZE, 0600);

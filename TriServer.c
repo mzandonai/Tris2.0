@@ -23,8 +23,7 @@ void cleanup();
 bool victory();
 bool draw();
 
-int rows = 0;
-int cols = 0;
+int matrix_dim = 0;
 
 int timeout = 0;
 char player1;
@@ -154,13 +153,9 @@ int main(int argc, char *argv[])
     startup_controls(argc, argv);
 
     // Richiesta dimensione matrice
-    printf("\nInserisci la dimensione della matrice...\n");
-    printf("RIGHE: ");
-    scanf("%i", &rows);
+    printf("\nInserisci la dimensione della matrice: ");
+    scanf("%i", &matrix_dim);
 
-    printf("COLONNE: ");
-    scanf("%i", &cols);
- 
     // Creazione memoria condivisa
     shmid = shmget(SHM_KEY, SIZE, IPC_CREAT | 0660);
     if (shmid == -1)
